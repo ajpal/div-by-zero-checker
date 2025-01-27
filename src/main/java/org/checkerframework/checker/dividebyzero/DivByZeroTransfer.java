@@ -128,8 +128,8 @@ public class DivByZeroTransfer extends CFTransfer {
     if (x == LatticePoint.Zero) { return rhs; }
     if (y == LatticePoint.Zero) { return lhs; }
 
-    if (x == LatticePoint.Pos && y == LatticePoint.Pos) { reflect(Pos.class); }
-    if (x == LatticePoint.Neg && y == LatticePoint.Neg) { reflect(Neg.class); }
+    if (x == LatticePoint.Pos && y == LatticePoint.Pos) { return reflect(Pos.class); }
+    if (x == LatticePoint.Neg && y == LatticePoint.Neg) { return reflect(Neg.class); }
 
     return top();
   }
@@ -144,13 +144,19 @@ public class DivByZeroTransfer extends CFTransfer {
     if (x == LatticePoint.Zero && y == LatticePoint.Pos) { return reflect(Neg.class); }
     if (x == LatticePoint.Zero && y == LatticePoint.Neg) { return reflect(Pos.class); }
 
-    if (x == LatticePoint.Pos && y == LatticePoint.Neg) { reflect(Pos.class); }
-    if (x == LatticePoint.Neg && y == LatticePoint.Pos) { reflect(Neg.class); }
+    if (x == LatticePoint.Pos && y == LatticePoint.Neg) { return reflect(Pos.class); }
+    if (x == LatticePoint.Neg && y == LatticePoint.Pos) { return reflect(Neg.class); }
 
     return top();
   }
 
   private  AnnotationMirror transferMod(AnnotationMirror lhs, AnnotationMirror rhs) {
+    LatticePoint x = getLatticePoint(lhs);
+    LatticePoint y = getLatticePoint(rhs);
+    if (x == LatticePoint.Bot || y == LatticePoint.Bot) { return bottom(); }
+
+    if (y == LatticePoint.Zero) { return reflect(Zero.class); }
+
     return top();
   }
 
@@ -163,11 +169,11 @@ public class DivByZeroTransfer extends CFTransfer {
 
     if (x == LatticePoint.NotZero && y == LatticePoint.NotZero) { return reflect(NotZero.class); }
 
-    if (x == LatticePoint.Pos && y == LatticePoint.Pos) { reflect(Pos.class); }
-    if (x == LatticePoint.Neg && y == LatticePoint.Neg) { reflect(Pos.class); }
+    if (x == LatticePoint.Pos && y == LatticePoint.Pos) { return reflect(Pos.class); }
+    if (x == LatticePoint.Neg && y == LatticePoint.Neg) { return reflect(Pos.class); }
 
-    if (x == LatticePoint.Pos && y == LatticePoint.Neg) { reflect(Neg.class); }
-    if (x == LatticePoint.Neg && y == LatticePoint.Pos) { reflect(Neg.class); }
+    if (x == LatticePoint.Pos && y == LatticePoint.Neg) { return reflect(Neg.class); }
+    if (x == LatticePoint.Neg && y == LatticePoint.Pos) { return reflect(Neg.class); }
 
     return top();
   }
