@@ -76,8 +76,100 @@ public class DivByZeroTransfer extends CFTransfer {
    */
   private AnnotationMirror refineLhsOfComparison(
       Comparison operator, AnnotationMirror lhs, AnnotationMirror rhs) {
-    // TODO
+    if (operator == Comparison.NE && analysis.getTypeFactory().areSameByClass(rhs, Zero.class)) {
+      return glb(lhs, reflect(NotZero.class));
+    }
+    if (operator == Comparison.GT && analysis.getTypeFactory().areSameByClass(rhs, Zero.class)) {
+      return glb(lhs, reflect(Pos.class));
+    }
+    if (operator == Comparison.GE && analysis.getTypeFactory().areSameByClass(rhs, Pos.class)) {
+      return glb(lhs, reflect(Pos.class));
+    }
+    if (operator == Comparison.LT && analysis.getTypeFactory().areSameByClass(rhs, Zero.class)) {
+      return glb(lhs, reflect(Pos.class));
+    }
+    if (operator == Comparison.LE && analysis.getTypeFactory().areSameByClass(rhs, Neg.class)) {
+      return glb(lhs, reflect(Pos.class));
+    }
     return lhs;
+  }
+
+  enum LatticePoint {
+    Top,
+    NotZero,
+    Pos,
+    Neg,
+    Zero,
+    Bot
+  }
+
+  private LatticePoint getLatticePoint(AnnotationMirror e) {
+    if (analysis.getTypeFactory().areSameByClass(e, Zero.class)) {
+      return LatticePoint.Zero;
+    } else if (analysis.getTypeFactory().areSameByClass(e, Pos.class)) {
+      return LatticePoint.Pos;
+    } else if (analysis.getTypeFactory().areSameByClass(e, Neg.class)) {
+      return LatticePoint.Neg;
+    } else if (analysis.getTypeFactory().areSameByClass(e, NotZero.class)) {
+      return LatticePoint.NotZero;
+    } else if (analysis.getTypeFactory().areSameByClass(e, Bot.class)) {
+      return LatticePoint.Bot;
+    } else {
+      return LatticePoint.Top;
+    }
+  }
+
+
+  private AnnotationMirror transferPlus(AnnotationMirror lhs, AnnotationMirror rhs) {
+    LatticePoint x = getLatticePoint(lhs);
+    LatticePoint y = getLatticePoint(rhs);
+    if (x == LatticePoint.Bot || y == LatticePoint.Bot) { return bottom(); }
+
+    if (x == LatticePoint.Zero) { return rhs; }
+    if (y == LatticePoint.Zero) { return lhs; }
+
+    if (x == LatticePoint.Pos && y == LatticePoint.Pos) { reflect(Pos.class); }
+    if (x == LatticePoint.Neg && y == LatticePoint.Neg) { reflect(Neg.class); }
+
+    return top();
+  }
+
+  private AnnotationMirror transferMinus(AnnotationMirror lhs, AnnotationMirror rhs) {
+    LatticePoint x = getLatticePoint(lhs);
+    LatticePoint y = getLatticePoint(rhs);
+    if (x == LatticePoint.Bot || y == LatticePoint.Bot) { return bottom(); }
+
+    if (y == LatticePoint.Zero) { return rhs; }
+
+    if (x == LatticePoint.Zero && y == LatticePoint.Pos) { return reflect(Neg.class); }
+    if (x == LatticePoint.Zero && y == LatticePoint.Neg) { return reflect(Pos.class); }
+
+    if (x == LatticePoint.Pos && y == LatticePoint.Neg) { reflect(Pos.class); }
+    if (x == LatticePoint.Neg && y == LatticePoint.Pos) { reflect(Neg.class); }
+
+    return top();
+  }
+
+  private  AnnotationMirror transferMod(AnnotationMirror lhs, AnnotationMirror rhs) {
+    return top();
+  }
+
+  private  AnnotationMirror transferMulDiv(AnnotationMirror lhs, AnnotationMirror rhs) {
+    LatticePoint x = getLatticePoint(lhs);
+    LatticePoint y = getLatticePoint(rhs);
+    if (x == LatticePoint.Bot || y == LatticePoint.Bot) { return bottom(); }
+
+    if (x == LatticePoint.Zero || y == LatticePoint.Zero) { return reflect(Zero.class); }
+
+    if (x == LatticePoint.NotZero && y == LatticePoint.NotZero) { return reflect(NotZero.class); }
+
+    if (x == LatticePoint.Pos && y == LatticePoint.Pos) { reflect(Pos.class); }
+    if (x == LatticePoint.Neg && y == LatticePoint.Neg) { reflect(Pos.class); }
+
+    if (x == LatticePoint.Pos && y == LatticePoint.Neg) { reflect(Neg.class); }
+    if (x == LatticePoint.Neg && y == LatticePoint.Pos) { reflect(Neg.class); }
+
+    return top();
   }
 
   /**
@@ -97,8 +189,15 @@ public class DivByZeroTransfer extends CFTransfer {
    */
   private AnnotationMirror arithmeticTransfer(
       BinaryOperator operator, AnnotationMirror lhs, AnnotationMirror rhs) {
-    // TODO
-    return top();
+    switch (operator) {
+      case PLUS: return transferPlus(lhs, rhs);
+      case MINUS: return transferMinus(lhs, rhs);
+      case MOD: return transferMod(lhs, rhs);
+      case TIMES:
+      case DIVIDE:
+          return transferMulDiv(lhs, rhs);
+      default: return top();
+    }
   }
 
   // ========================================================================
